@@ -18,6 +18,7 @@ options.multiplexing = 8
 options.hardware_mapping = 'regular'  # If you have an Adafruit HAT: 'adafruit-hat'
 
 matrix = RGBMatrix(options = options)
+matrix.brightness = 50
 
 url = "https://api.darksky.net/forecast/{}/36.65794,-4.5422482?units=si&exclude=hourly,daily".format(darksky_key)
 
@@ -25,7 +26,7 @@ response = requests.get(url).json()
 temperature = str(int(response['currently']['temperature']))
 icon = response['currently']['icon']
 
-image = Image.open("weather_icons/{}.png".format(icon))
+image = Image.open("/home/pi/rpi-rgb-led-matrix/bindings/python/samples/weather_icons/{}.png".format(icon))
 image.thumbnail((matrix.width, matrix.height), Image.ANTIALIAS)
 matrix.SetImage(image.convert('RGB'))
 
