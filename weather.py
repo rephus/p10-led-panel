@@ -4,8 +4,10 @@ import sys
 
 from rgbmatrix import RGBMatrix, RGBMatrixOptions, graphics
 from PIL import Image
+import requests 
 
-image = Image.open("sun.png")
+darksky_key = sys.argv[1]
+
 
 # Configuration for the matrix
 options = RGBMatrixOptions()
@@ -17,19 +19,22 @@ options.hardware_mapping = 'regular'  # If you have an Adafruit HAT: 'adafruit-h
 
 matrix = RGBMatrix(options = options)
 
-# Make image fit our screen.
-image.thumbnail((matrix.width, matrix.height), Image.ANTIALIAS)
+url = "https://api.darksky.net/forecast/{}/36.65794,-4.5422482?units=si&exclude=hourly,daily".format(darksky_key)
 
+response = requests.get(url).json()
+temperature = str(int(response['currently']['temperature']))
+icon = response['currently']['icon']
+
+image = Image.open("weather_icons/{}.png".format(icon))
+image.thumbnail((matrix.width, matrix.height), Image.ANTIALIAS)
 matrix.SetImage(image.convert('RGB'))
 
 font = graphics.Font()
-font.LoadFont("../../../fonts/tom-thumb.bdf")
+font.LoadFont("/home/pi/rpi-rgb-led-matrix/fonts/tom-thumb.bdf")
 
 white = graphics.Color(255, 255, 255)
-graphics.DrawText(matrix, font, 20, 8, white, "32")
+graphics.DrawText(matrix, font, 20, 8, white, temperature)
 graphics.DrawCircle(matrix, 29, 4, 1, white)
-
-
 
 try:
     print("Press CTRL-C to stop.")

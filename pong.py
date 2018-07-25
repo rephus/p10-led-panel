@@ -15,10 +15,10 @@ class GraphicsTest(SampleBase):
         self.matrix.brightness = 50
         
         font = graphics.Font()
-        font.LoadFont("../../../fonts/tom-thumb.bdf")
+        font.LoadFont("/home/pi/rpi-rgb-led-matrix/fonts/tom-thumb.bdf")
 
         blue = graphics.Color(0, 0, 255)
-        red = graphics.Color(255, 0, 0)
+        red = graphics.Color(255, 0, 0) 
         green = graphics.Color(0, 255, 0)
         white = graphics.Color(255, 255, 255)
 
@@ -67,7 +67,7 @@ class GraphicsTest(SampleBase):
                 is_up = not is_up 
             if ball_x < 2: 
                 if left_needs_to_lose: 
-                    hour = datetime.now().hour
+                    minute =  datetime.now().minute
                     ball_x = canvas.width/2
                     ball_y = canvas.height/2
                     left_needs_to_lose = False
@@ -75,7 +75,7 @@ class GraphicsTest(SampleBase):
                     is_left = not is_left 
             if ball_x > canvas.width-3: 
                 if right_needs_to_lose: 
-                    minute =  datetime.now().minute
+                    hour = datetime.now().hour
                     ball_x = canvas.width/2
                     ball_y = canvas.height/2
                     right_needs_to_lose = False
@@ -98,9 +98,9 @@ class GraphicsTest(SampleBase):
             graphics.DrawText(canvas, font, 7, 5, blue, str_time)
 
             if minute != datetime.now().minute: 
-                right_needs_to_lose = True
+                left_needs_to_lose = True
             if hour != datetime.now().hour: 
-                left_needs_to_lose = True 
+                right_needs_to_lose = True 
             
             time.sleep(0.1)   # show display for 10 seconds before exit
 
