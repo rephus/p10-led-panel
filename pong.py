@@ -5,9 +5,9 @@ import time
 from datetime import datetime
 
 
-class GraphicsTest(SampleBase):
+class Pong(SampleBase):
     def __init__(self, *args, **kwargs):
-        super(GraphicsTest, self).__init__(*args, **kwargs)
+        super(Pong, self).__init__(*args, **kwargs)
 
         
     def run(self):
@@ -108,6 +108,6 @@ class GraphicsTest(SampleBase):
 
 # Main function
 if __name__ == "__main__":
-    graphics_test = GraphicsTest()
+    graphics_test = Pong()
     if (not graphics_test.process()):
         graphics_test.print_help()
