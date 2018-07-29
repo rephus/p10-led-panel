@@ -19,16 +19,16 @@ def root():
     print("Action: {}".format(action))
 
     if not action: 
-        pass 
+        return 
 
     if proc:
         print("Killing previous screen {}".format(proc.pid))
         subprocess.Popen("sudo pkill -P {}".format(proc.pid), shell=True)
 
     if action == "pong" or "unk" in  action : # funk or punk 
-        proc = subprocess.Popen("sudo python {}/pong.py --led-rows=16 --led-multiplexing=8".format(python_dir), shell=True, preexec_fn=os.setsid)
+        proc = subprocess.Popen("sudo python {}/pong.py".format(python_dir), shell=True, preexec_fn=os.setsid)
     elif action == "weather": 
-        proc = subprocess.Popen("sudo python {}/weather.py {}".format(python_dir, config.weather_key), shell=True, preexec_fn=os.setsid)
+        proc = subprocess.Popen("sudo python {}/weather.py".format(python_dir), shell=True, preexec_fn=os.setsid)
     elif action == "off" or action == "disable": 
         print("Display off")
     elif action == "volume" or action == "music": 

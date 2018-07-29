@@ -6,8 +6,8 @@ import sys
 
 from rgbmatrix import RGBMatrix, RGBMatrixOptions, graphics
 from PIL import Image
-import requests 
-import config 
+import requests
+import config
 
 class Weather(SampleBase):
     def __init__(self, *args, **kwargs):
@@ -16,7 +16,6 @@ class Weather(SampleBase):
     def run(self):
 
         self.matrix = self.matrix # RGBMatrix(options = options)
-        self.matrix.brightness = 50
 
         url = "https://api.darksky.net/forecast/{}/36.65794,-4.5422482?units=si&exclude=hourly,daily".format(config.weather_key)
 
@@ -31,7 +30,7 @@ class Weather(SampleBase):
 
         self.white = graphics.Color(255, 255, 255)
 
-    def loop(self): 
+    def loop(self):
         self.image.thumbnail((self.matrix.width, self.matrix.height), Image.ANTIALIAS)
         self.matrix.SetImage(self.image.convert('RGB'))
 
@@ -45,6 +44,6 @@ if __name__ == "__main__":
     graphics_test = Weather()
     if (not graphics_test.process()):
         graphics_test.print_help()
-    else: 
-        while True: 
+    else:
+        while True:
             graphics_test.loop()
