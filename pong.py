@@ -34,7 +34,8 @@ class Pong(SampleBase):
 
         self.is_left = True
         self.is_up = True
-    
+        
+        
     def loop(self):
 
         ## Stick logic
