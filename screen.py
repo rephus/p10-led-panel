@@ -9,6 +9,9 @@ import random
 from rgbmatrix import RGBMatrix, RGBMatrixOptions, graphics
 from PIL import Image
 import requests
+import redis
+# https://github.com/andymccurdy/redis-py
+r = redis.StrictRedis(host='localhost', port=6379, db=0)
 
 class Point:
     """ Point class represents and manipulates x,y coords. """
@@ -31,11 +34,13 @@ class Screen(SampleBase):
 
         self.font = graphics.Font()
         self.font.LoadFont("/home/pi/rpi-rgb-led-matrix/fonts/tom-thumb.bdf")
+        #self.font.LoadFont("/home/pi/rpi-rgb-led-matrix/fonts/4x6.bdf")
 
-        self.blue = graphics.Color(0, 0, 255)
+        self.blue = graphics.Color(50, 50, 255)
         self.red = graphics.Color(255, 0, 0)
         self.green = graphics.Color(100, 255, 100)
         self.white = graphics.Color(255, 255, 255)
+        self.yellow = graphics.Color(255, 100, 0)
 
         # Pong initialization
         
@@ -67,6 +72,8 @@ class Screen(SampleBase):
         # weather
         
         self.last_weather_request = 0 # cache results for 30 mins
+        self.humidity = 0
+        self.temperature = 0
         
         #Spotify
         self.spotify_song = ""
@@ -97,14 +104,14 @@ class Screen(SampleBase):
             try:
                 
                 self.canvas.Clear()
-                
+
                 if self.screen==0:
                     self._change_screen(30)
                     self.pong_loop()
                 elif self.screen==1:
                     self._change_screen(0)
+                    self.show_home_weather()
                     self.show_weather()
-                    time.sleep(5)
                 elif self.screen==2:
                     self._change_screen(30)
                     self.snake_loop()
@@ -221,31 +228,56 @@ class Screen(SampleBase):
         time.sleep(0.1)   # show display for 10 seconds before exit
 
 
-    def show_weather(self):
+    def show_home_weather(self):
+        time.sleep(0.01)
+        self.canvas = self.matrix.SwapOnVSync(self.canvas)
+        self.canvas.Clear()
         
-        # Request every 30 mins
-        if self.last_weather_request + 1800 < time.time():
+        self.image = Image.open("/home/pi/rpi-rgb-led-matrix/bindings/python/samples/weather_icons/home.png")
+
+        self.image.thumbnail((self.matrix.width, self.matrix.height), Image.ANTIALIAS)
+        self.matrix.SetImage(self.image.convert('RGB'))
+
+        home_temperature = r.get('temperature').split('.')[0]
+        home_humidity = r.get('humidity').split('.')[0]
+
+        graphics.DrawText(self.matrix, self.font, 20, 6, self.yellow, home_temperature)
+        graphics.DrawCircle(self.matrix, 29, 2, 1, self.yellow)
+        
+        graphics.DrawText(self.matrix, self.font, 20, 14, self.blue, "{}%".format(home_humidity))
+        
+        time.sleep(5)
+        
+        
+    def show_weather(self):
+        time.sleep(0.01)
+        self.canvas = self.matrix.SwapOnVSync(self.canvas)
+        self.canvas.Clear()
+        
+        # Request every 10 mins
+        if self.last_weather_request + 600 < time.time():
             
             url = "https://api.darksky.net/forecast/{}/36.65794,-4.5422482?units=si&exclude=hourly,daily".format(config.weather_key)
             
             response = requests.get(url).json()
             self.temperature = str(int(response['currently']['temperature']))
+            self.humidity = str(response['currently']['humidity'] * 100).split('.')[0]
             icon = response['currently']['icon']
                     
             self.image = Image.open("/home/pi/rpi-rgb-led-matrix/bindings/python/samples/weather_icons/{}.png".format(icon))
             
             self.last_weather_request = time.time()
-        
-        #graphics.DrawText(self.matrix, self.font, 20, 8, self.white, "bleh")
-        time.sleep(0.01)
-        self.canvas = self.matrix.SwapOnVSync(self.canvas)
-        self.canvas.Clear()
-        
+
         self.image.thumbnail((self.matrix.width, self.matrix.height), Image.ANTIALIAS)
         self.matrix.SetImage(self.image.convert('RGB'))
 
-        graphics.DrawText(self.matrix, self.font, 20, 8, self.white, self.temperature)
-        graphics.DrawCircle(self.matrix, 29, 4, 1, self.white)
+        graphics.DrawText(self.matrix, self.font, 20, 6, self.yellow, self.temperature)
+        graphics.DrawCircle(self.matrix, 29, 2, 1, self.yellow)
+        
+        graphics.DrawText(self.matrix, self.font, 20, 14, self.blue, "{}%".format(self.humidity))
+        
+        time.sleep(5)
+
 
     def pong_loop(self):
 
