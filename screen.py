@@ -3,7 +3,8 @@ import time
 from datetime import datetime
 import config
 import random
-
+import math
+import sys
 # weather
 
 from rgbmatrix import RGBMatrix, RGBMatrixOptions, graphics
@@ -74,12 +75,59 @@ class Screen(SampleBase):
         self.last_weather_request = 0 # cache results for 30 mins
         self.humidity = 0
         self.temperature = 0
-        
+        self.home_image = Image.open("/home/pi/rpi-rgb-led-matrix/bindings/python/samples/weather_icons/home8.png")
+
         #Spotify
         self.spotify_song = ""
         self.changed_screen = time.time()
         self.screen = 0
-                
+        
+        # Tetris
+        
+        self.tetrimino = {}
+        self.restart_tetris()
+        self.shapes = {
+            'Z': [[0,0,0,0],
+                  [1,1,0,0],
+                  [0,1,1,0],
+                  [0,0,0,0]],
+            'S': [[0,0,0,0],
+                  [0,0,1,1],
+                  [0,1,1,0],
+                  [0,0,0,0]],
+            'T': [[0,0,0,0],
+                  [1,1,1,0],
+                  [0,1,0,0],
+                  [0,0,0,0]],
+            'I': [[0,1,0,0],
+                  [0,1,0,0],
+                  [0,1,0,0],
+                  [0,1,0,0]],
+            'J': [[0,0,0,0],
+                  [0,0,1,0],
+                  [0,0,1,0],
+                  [0,1,1,0]],
+            'L': [[0,0,0,0],
+                  [0,1,0,0],
+                  [0,1,0,0],
+                  [0,1,1,0]],
+            'O': [[0,0,0,0],
+                  [0,1,1,0],
+                  [0,1,1,0],
+                  [0,0,0,0]],
+            
+        }
+        self.shape_color = {
+            'Z': {'r': 0, 'g': 255, 'b': 0},
+            'S': {'r': 255, 'g': 0, 'b': 0},
+            'T': {'r': 100, 'g': 0, 'b': 100},
+            'I': {'r': 0, 'g': 0, 'b': 255},
+            'J': {'r': 255, 'g': 0, 'b': 100},
+            'L': {'r': 255, 'g': 100, 'b': 0},
+            'O': {'r': 100, 'g': 100, 'b': 0},
+        }
+        #  zip(*original[::-1])
+        
     def _change_screen(self, t):
         if self.changed_screen + t < time.time():
             
@@ -87,7 +135,7 @@ class Screen(SampleBase):
             # only if the shong has changed.
             self.show_spotify()
             
-            self.screen = (self.screen +1) % 3
+            self.screen = (self.screen +1) % 4
             self.changed_screen = time.time()
             
             # Change brightness
@@ -104,7 +152,7 @@ class Screen(SampleBase):
             try:
                 
                 self.canvas.Clear()
-
+            
                 if self.screen==0:
                     self._change_screen(30)
                     self.pong_loop()
@@ -115,13 +163,145 @@ class Screen(SampleBase):
                 elif self.screen==2:
                     self._change_screen(30)
                     self.snake_loop()
+                elif self.screen==3:
+                    self._change_screen(30)
+                    self.tetris()
                 else:
                     print("Unexpected screen {}".format(self.screen))
                 
                 self.canvas = self.matrix.SwapOnVSync(self.canvas)
+                
             except Exception as e:
-                print("Error, unable to show screen {}".format(e))
+                exc_type, exc_obj, tb = sys.exc_info()
+
+                print("Error, unable to show screen {}: {}".format(tb.tb_lineno, e))
             
+            
+    def restart_tetris(self):
+        print("End tetris game")
+        #reset
+        self.blocks = [[0 for x in range(self.matrix.width+2)] for y in range(self.matrix.height+2)]
+        # Set limit
+        for x in range(self.matrix.width+2):
+            self.blocks[16][x] = {'r':255, 'g': 255, 'b': 255}
+            
+        self.tetrimino = {}
+        self.new_tetrimino()
+        self.find_tetrimino_hole()
+        
+    def check_tetris_over(self):
+        for x in range(self.matrix.width):
+            block = self.blocks[6][x]
+            if block:
+                self.restart_tetris()
+                
+
+    def new_tetrimino(self):
+        
+        # Draw tetrimino in blocks
+        
+        if self.tetrimino:
+            t = self.tetrimino
+            shape = self.shapes[t['shape']]
+            for r in range(0, t['rotation']):
+                shape = zip(*shape[::-1])
+            color = self.shape_color[t['shape']]
+            for x in range(4):
+                for y in range(4):
+                    pixel = shape[y][x]
+                    if pixel:
+                        self.blocks[t['y']+y-2][t['x']+x-2] = color
+ 
+        # TODO random
+        shape = random.choice(['Z', 'S', 'T', 'I', 'O', 'J', 'L'])
+        self.tetrimino = {'shape': shape, 'x': self.matrix.width / 2, 'y': 5, 'rotation': 0}
+        
+        self.find_tetrimino_hole()
+        
+    def find_tetrimino_hole(self):
+        self.next_tetrimino_hole = {'x': random.randint(0, self.matrix.width-1), 'y': self.matrix.height-1}
+                    
+                    
+    def blocked_tetrimino(self, x, y):
+        
+        try:
+            return self.blocks[y][x]
+        except:
+            print("ERROR blocked tetrimino ", x, y)
+            return True
+        
+    
+    def tetris(self):
+        
+        # Draw existing blocks
+        
+        for x in range(self.matrix.width):
+            for y in range(self.matrix.height):
+                b = self.blocks[y][x]
+                if b:
+                    self.matrix.SetPixel(x, y, b['r'], b['g'], b['b'])
+        
+        # Current tetrimino
+        
+        t = self.tetrimino
+        
+        shape = self.shapes[t['shape']]
+        for r in range(0, t['rotation']):
+            shape = zip(*shape[::-1])
+            
+        ## Draw current tetrimino
+        color = self.shape_color[t['shape']]
+        for x in range(4):
+            for y in range(4):
+                pixel = shape[y][x]
+                if pixel:
+                    self.matrix.SetPixel(t['x']+x-2,t['y']+y-2, color['r'], color['g'], color['b'])
+    
+        t['y'] += 1
+        #self.matrix.SetPixel(self.next_tetrimino_hole['x'], self.next_tetrimino_hole['y'], 255, 255, 255) # debug
+
+        # Move tetrimino
+        
+        if self.next_tetrimino_hole['x'] != t['x']:
+            move = 1
+            if math.fabs(self.next_tetrimino_hole['x'] - t['x']) > 5:
+                move = 2
+            if self.next_tetrimino_hole['x'] < t['x']:
+                move *= -1
+               
+            # There is no other tetrimino in the way
+            if not self.blocked_tetrimino(t['x'] + move*2, t['y']):
+                t['x'] += move
+            
+        if 2 > random.randint(0,10):
+            t['rotation'] = (t['rotation'] + 1 ) % 4
+
+        # Check collission
+        
+        # Update shape
+        shape = self.shapes[t['shape']]
+        for r in range(0, t['rotation']):
+            shape = zip(*shape[::-1])
+        
+        check_collision = True
+        for x in range(4):
+            for y in range(4):
+                pixel = shape[y][x]
+                if pixel and check_collision:
+                    if self.blocked_tetrimino(t['x']+x-2, t['y']+y-1):
+                        self.new_tetrimino()
+                        self.find_tetrimino_hole()
+                        check_collision = False
+                        break
+                       
+        str_time = "{} {}".format( str(self.hour).zfill(2), str(self.minute).zfill(2))
+        graphics.DrawText(self.canvas, self.font, 7, 5, self.blue, str_time)
+
+        time.sleep(0.2)
+
+        self.check_tetris_over()
+
+        
     def _random_ball(self, ball):
         ball.x = random.randint(0, self.matrix.width-1)
         ball.y = random.randint(6, self.matrix.height-1)
@@ -233,19 +413,20 @@ class Screen(SampleBase):
         self.canvas = self.matrix.SwapOnVSync(self.canvas)
         self.canvas.Clear()
         
-        self.image = Image.open("/home/pi/rpi-rgb-led-matrix/bindings/python/samples/weather_icons/home.png")
-
-        self.image.thumbnail((self.matrix.width, self.matrix.height), Image.ANTIALIAS)
-        self.matrix.SetImage(self.image.convert('RGB'))
+        self.home_image.thumbnail((self.matrix.width, self.matrix.height), Image.ANTIALIAS)
+        self.matrix.SetImage(self.home_image.convert('RGB'), 0, 7)
 
         home_temperature = r.get('temperature').split('.')[0]
         home_humidity = r.get('humidity').split('.')[0]
 
-        graphics.DrawText(self.matrix, self.font, 20, 6, self.yellow, home_temperature)
-        graphics.DrawCircle(self.matrix, 29, 2, 1, self.yellow)
+        graphics.DrawText(self.matrix, self.font, 9, 13, self.yellow, home_temperature)
+        graphics.DrawCircle(self.matrix, 18, 9, 1, self.yellow)
         
-        graphics.DrawText(self.matrix, self.font, 20, 14, self.blue, "{}%".format(home_humidity))
+        graphics.DrawText(self.matrix, self.font, 21, 13, self.blue, "{}%".format(home_humidity))
         
+        str_time = "{} {}".format( str(self.hour).zfill(2), str(self.minute).zfill(2))
+        graphics.DrawText(self.matrix, self.font, 7, 5, self.blue, str_time)
+
         time.sleep(5)
         
         
@@ -264,18 +445,26 @@ class Screen(SampleBase):
             self.humidity = str(response['currently']['humidity'] * 100).split('.')[0]
             icon = response['currently']['icon']
                     
-            self.image = Image.open("/home/pi/rpi-rgb-led-matrix/bindings/python/samples/weather_icons/{}.png".format(icon))
+            self.image = Image.open("/home/pi/rpi-rgb-led-matrix/bindings/python/samples/weather_icons/{}8.png".format(icon))
             
             self.last_weather_request = time.time()
 
         self.image.thumbnail((self.matrix.width, self.matrix.height), Image.ANTIALIAS)
-        self.matrix.SetImage(self.image.convert('RGB'))
+        self.matrix.SetImage(self.image.convert('RGB'), 0 ,7 )
 
-        graphics.DrawText(self.matrix, self.font, 20, 6, self.yellow, self.temperature)
-        graphics.DrawCircle(self.matrix, 29, 2, 1, self.yellow)
+        #graphics.DrawText(self.matrix, self.font, 20, 6, self.yellow, self.temperature)
+        #graphics.DrawCircle(self.matrix, 29, 2, 1, self.yellow)
         
-        graphics.DrawText(self.matrix, self.font, 20, 14, self.blue, "{}%".format(self.humidity))
+        #graphics.DrawText(self.matrix, self.font, 20, 14, self.blue, "{}%".format(self.humidity))
         
+        graphics.DrawText(self.matrix, self.font, 9, 13, self.yellow, self.temperature)
+        graphics.DrawCircle(self.matrix, 18, 9, 1, self.yellow)
+        
+        graphics.DrawText(self.matrix, self.font, 21, 13, self.blue, "{}%".format(self.humidity))
+        
+        str_time = "{} {}".format( str(self.hour).zfill(2), str(self.minute).zfill(2))
+        graphics.DrawText(self.matrix, self.font, 7, 5, self.blue, str_time)
+
         time.sleep(5)
 
 
