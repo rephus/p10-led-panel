@@ -141,9 +141,9 @@ class Screen(SampleBase):
             # Change brightness
             now = datetime.now()
             if now.hour >= 22 or now.hour <= 8:
-                self.matrix.brightness = 10
+                self.matrix.brightness = 5
             else:
-                self.matrix.brightness = 25
+                self.matrix.brightness = 20
 
                         
     def loop(self):
@@ -179,6 +179,8 @@ class Screen(SampleBase):
             
     def restart_tetris(self):
         print("End tetris game")
+        time.sleep(2)
+
         #reset
         self.blocks = [[0 for x in range(self.matrix.width+2)] for y in range(self.matrix.height+2)]
         # Set limit
@@ -191,7 +193,7 @@ class Screen(SampleBase):
         
     def check_tetris_over(self):
         for x in range(self.matrix.width):
-            block = self.blocks[6][x]
+            block = self.blocks[5][x]
             if block:
                 self.restart_tetris()
                 
@@ -398,7 +400,7 @@ class Screen(SampleBase):
         graphics.DrawCircle(self.canvas, self.ball.x, self.ball.y, 0, self.white)
         #graphics.DrawCircle(self.canvas, self.fake_ball.x, self.fake_ball.y, 0, self.green)
 
-        str_time = "{} {}".format( str(self.hour).zfill(2), str(self.minute).zfill(2))
+        str_time = "{}:{}".format( str(self.hour).zfill(2), str(self.minute).zfill(2))
         graphics.DrawText(self.canvas, self.font, 7, 5, self.blue, str_time)
 
         #  Change time
@@ -424,7 +426,7 @@ class Screen(SampleBase):
         
         graphics.DrawText(self.matrix, self.font, 21, 13, self.blue, "{}%".format(home_humidity))
         
-        str_time = "{} {}".format( str(self.hour).zfill(2), str(self.minute).zfill(2))
+        str_time = "{}:{}".format( str(self.hour).zfill(2), str(self.minute).zfill(2))
         graphics.DrawText(self.matrix, self.font, 7, 5, self.blue, str_time)
 
         time.sleep(5)
@@ -462,7 +464,7 @@ class Screen(SampleBase):
         
         graphics.DrawText(self.matrix, self.font, 21, 13, self.blue, "{}%".format(self.humidity))
         
-        str_time = "{} {}".format( str(self.hour).zfill(2), str(self.minute).zfill(2))
+        str_time = "{}:{}".format( str(self.hour).zfill(2), str(self.minute).zfill(2))
         graphics.DrawText(self.matrix, self.font, 7, 5, self.blue, str_time)
 
         time.sleep(5)
