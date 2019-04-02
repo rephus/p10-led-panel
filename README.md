@@ -19,7 +19,7 @@ make
 ```
 sudo apt-get update 
 sudo apt-get install python3-dev python3-pillow -y
-cd rpi-rgb-led-matrix/bindings/python/samples/ 
+cd rpi-rgb-led-matrix/bindings/python/ 
 make build-python PYTHON=$(which python3)
 ```
 

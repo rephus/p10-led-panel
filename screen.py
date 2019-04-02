@@ -6,6 +6,7 @@ import random
 import math
 import sys
 # weather
+import traceback
 
 from rgbmatrix import RGBMatrix, RGBMatrixOptions, graphics
 from PIL import Image
@@ -34,7 +35,7 @@ class Screen(SampleBase):
         self.canvas = self.matrix.CreateFrameCanvas()
 
         self.font = graphics.Font()
-        self.font.LoadFont("/home/pi/rpi-rgb-led-matrix/fonts/tom-thumb.bdf")
+        self.font.LoadFont("tom-thumb.bdf")
         #self.font.LoadFont("/home/pi/rpi-rgb-led-matrix/fonts/4x6.bdf")
 
         self.blue = graphics.Color(50, 50, 255)
@@ -75,7 +76,7 @@ class Screen(SampleBase):
         self.last_weather_request = 0 # cache results for 30 mins
         self.humidity = 0
         self.temperature = 0
-        self.home_image = Image.open("/home/pi/rpi-rgb-led-matrix/bindings/python/samples/weather_icons/home8.png")
+        self.home_image = Image.open("./weather_icons/home8.png")
 
         #Spotify
         self.spotify_song = ""
@@ -150,21 +151,21 @@ class Screen(SampleBase):
         while True:
             
             try:
-                
+                wait_screen= 30
                 self.canvas.Clear()
             
                 if self.screen==0:
-                    self._change_screen(30)
+                    self._change_screen(wait_screen)
                     self.pong_loop()
                 elif self.screen==1:
                     self._change_screen(0)
                     self.show_home_weather()
                     self.show_weather()
                 elif self.screen==2:
-                    self._change_screen(30)
+                    self._change_screen(wait_screen)
                     self.snake_loop()
                 elif self.screen==3:
-                    self._change_screen(30)
+                    self._change_screen(wait_screen)
                     self.tetris()
                 else:
                     print("Unexpected screen {}".format(self.screen))
@@ -173,7 +174,7 @@ class Screen(SampleBase):
                 
             except Exception as e:
                 exc_type, exc_obj, tb = sys.exc_info()
-
+                traceback.print_exc()
                 print("Error, unable to show screen {}: {}".format(tb.tb_lineno, e))
             
             
@@ -206,17 +207,19 @@ class Screen(SampleBase):
             t = self.tetrimino
             shape = self.shapes[t['shape']]
             for r in range(0, t['rotation']):
-                shape = zip(*shape[::-1])
+                shape = list(zip(*shape[::-1]))
             color = self.shape_color[t['shape']]
             for x in range(4):
                 for y in range(4):
                     pixel = shape[y][x]
                     if pixel:
-                        self.blocks[t['y']+y-2][t['x']+x-2] = color
+                        inty = int(t['y']+y-2)
+                        intx = int(t['x']+x-2)
+                        self.blocks[inty][intx] = color
  
         # TODO random
         shape = random.choice(['Z', 'S', 'T', 'I', 'O', 'J', 'L'])
-        self.tetrimino = {'shape': shape, 'x': self.matrix.width / 2, 'y': 5, 'rotation': 0}
+        self.tetrimino = {'shape': shape, 'x': int(self.matrix.width / 2), 'y': 5, 'rotation': 0}
         
         self.find_tetrimino_hole()
         
@@ -249,7 +252,7 @@ class Screen(SampleBase):
         
         shape = self.shapes[t['shape']]
         for r in range(0, t['rotation']):
-            shape = zip(*shape[::-1])
+            shape = list(zip(*shape[::-1]))
             
         ## Draw current tetrimino
         color = self.shape_color[t['shape']]
@@ -283,7 +286,7 @@ class Screen(SampleBase):
         # Update shape
         shape = self.shapes[t['shape']]
         for r in range(0, t['rotation']):
-            shape = zip(*shape[::-1])
+            shape = list(zip(*shape[::-1]))
         
         check_collision = True
         for x in range(4):
@@ -418,8 +421,8 @@ class Screen(SampleBase):
         self.home_image.thumbnail((self.matrix.width, self.matrix.height), Image.ANTIALIAS)
         self.matrix.SetImage(self.home_image.convert('RGB'), 0, 7)
 
-        home_temperature = r.get('temperature').split('.')[0]
-        home_humidity = r.get('humidity').split('.')[0]
+        home_temperature = r.get('temperature').decode("utf-8").split('.')[0]
+        home_humidity = r.get('humidity').decode("utf-8").split('.')[0]
 
         graphics.DrawText(self.matrix, self.font, 9, 13, self.yellow, home_temperature)
         graphics.DrawCircle(self.matrix, 18, 9, 1, self.yellow)
@@ -447,7 +450,7 @@ class Screen(SampleBase):
             self.humidity = str(response['currently']['humidity'] * 100).split('.')[0]
             icon = response['currently']['icon']
                     
-            self.image = Image.open("/home/pi/rpi-rgb-led-matrix/bindings/python/samples/weather_icons/{}8.png".format(icon))
+            self.image = Image.open("./weather_icons/{}8.png".format(icon))
             
             self.last_weather_request = time.time()
 
@@ -459,7 +462,7 @@ class Screen(SampleBase):
         
         #graphics.DrawText(self.matrix, self.font, 20, 14, self.blue, "{}%".format(self.humidity))
         
-        graphics.DrawText(self.matrix, self.font, 9, 13, self.yellow, self.temperature)
+        graphics.DrawText(self.matrix, self.font, 9, 13, self.yellow, "{}".format(self.temperature))
         graphics.DrawCircle(self.matrix, 18, 9, 1, self.yellow)
         
         graphics.DrawText(self.matrix, self.font, 21, 13, self.blue, "{}%".format(self.humidity))
