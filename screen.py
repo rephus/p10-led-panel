@@ -350,7 +350,7 @@ class Screen(SampleBase):
         
             json = response.json()
             
-            current_song = unicode("{} by {}".format(
+            current_song = str("{} by {}".format(
                 json['item']['name'].encode('utf8'),
                 json['item']['artists'][0]['name'].encode('utf8')
             ), errors='ignore')
@@ -449,9 +449,12 @@ class Screen(SampleBase):
             self.temperature = str(int(response['currently']['temperature']))
             self.humidity = str(response['currently']['humidity'] * 100).split('.')[0]
             icon = response['currently']['icon']
-                    
-            self.image = Image.open("./weather_icons/{}8.png".format(icon))
-            
+            try:        
+                self.image = Image.open("./weather_icons/{}8.png".format(icon))
+            except: 
+                print("ERROR Weather icon does not exist: {}".format(icon))
+                self.image = Image.open("./weather_icons/unknown8.png")
+
             self.last_weather_request = time.time()
 
         self.image.thumbnail((self.matrix.width, self.matrix.height), Image.ANTIALIAS)
